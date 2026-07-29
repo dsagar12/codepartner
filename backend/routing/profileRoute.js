@@ -20,7 +20,7 @@ profileRouter.delete("/delete", authMiddleware, async (req,res)=>{
 profileRouter.get("/user/:id", async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select(
-      "name email about photoURL skills createdAt"
+      "name email about photoURL skills createdAt leetcodeLink githubLink"
     );
 
     res.json(user);
@@ -51,67 +51,33 @@ profileRouter.patch("/change-password", authMiddleware, async (req,res)=>{
 });
 
 
-profileRouter.get("/profile", authMiddleware, async (req,res)=>{
-    try{
- res.json(req.user);
-    }catch(error){
-        res.status(500).send("Failed to fetch profile");
-    }
-       
-})
-
-
-profileRouter.get("/search", authMiddleware, async (req, res) => {
-  try {
-    const { skill } = req.query;
-
-    if (!skill) {
-      return res.status(400).send("Skill query parameter is required");
-    }
-
-    const skillArray = skill.split(",");
-
-    const connections = await connection.find({
-      $or: [
-        { fromUserId: req.user._id },
-        { toUserId: req.user._id }
-      ]
-    });
-
-    const hiddenUsers = connections.map(conn => {
-      if (conn.fromUserId.toString() === req.user._id.toString()) {
-        return conn.toUserId;
+  profileRouter.get("/profile", authMiddleware, async (req,res)=>{
+      try{
+  res.json(req.user);
+      }catch(error){
+          res.status(500).send("Failed to fetch profile");
       }
-      return conn.fromUserId;
-    });
+        
+  })
 
-    const users = await User.find({
-      _id: { $nin: [...hiddenUsers, req.user._id] }, 
-      skills: {
-        $elemMatch: {
-          $regex: skillArray.join("|"), 
-          $options: "i"
-        }
-      }
-    });
 
-    res.json({
-      message: "Users fetched successfully",
-      count: users.length,
-      users
-    });
+profileRouter.get("/search", async (req, res) => {
+  const { query } = req.query;
 
-  } catch (error) {
-    console.error(error);
-    res.status(500).send(error.message);
-  }
+  const users = await User.find({
+    $or: [
+      { name: { $regex: query, $options: "i" } },
+      { skills: { $regex: query, $options: "i" } },
+    ],
+  }).select("name photoURL skills");
+
+  res.json({ users });
 });
-
 
 profileRouter.patch("/edit", authMiddleware, async (req,res)=>{
     try{
         const bodyData=req.body;
-        const AllowedData=["name","about","photoURL","skills"];
+        const AllowedData=["name","about","photoURL","skills","leetcodeLink","githubLink"];
         const isValidData=Object.keys(bodyData).every(key=>AllowedData.includes(key));
         if(!isValidData){
             return res.status(400).send("Invalid data");
@@ -124,7 +90,6 @@ profileRouter.patch("/edit", authMiddleware, async (req,res)=>{
         res.json(user);
     }catch(error){
         res.status(500).send("Failed to update profile");
-    
     }
 })
 

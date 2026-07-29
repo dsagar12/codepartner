@@ -1,28 +1,86 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { Search } from "lucide-react";
 
 const SearchPage = () => {
   const [query, setQuery] = useState("");
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // 🔥 Popup state
+  const [showToast, setShowToast] = useState(false);
+  const [toastMsg, setToastMsg] = useState("");
+
   const navigate = useNavigate();
 
-  const handleSearch = async () => {
-    if (!query.trim()) return;
+  // 🔥 Auto hide toast
+  useEffect(() => {
+    if (showToast) {
+      const timer = setTimeout(() => setShowToast(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [showToast]);
+
+  const handleSearch = async (value) => {
+    const q = value || query;
+
+    if (!q.trim()) {
+      setUsers([]);
+      return;
+    }
 
     setLoading(true);
     try {
       const res = await axios.get(
-        `http://localhost:3000/search?skill=${query}`,
+        `http://localhost:3000/search?query=${q}`,
         { withCredentials: true }
       );
 
       setUsers(res.data.users || []);
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      if (error.response?.status === 401) {
+        navigate("/login");
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleConnect = async (id) => {
+    try {
+      await axios.post(
+        `http://localhost:3000/request/send/interested/${id}`,
+        {},
+        { withCredentials: true }
+      );
+
+      // ✅ success
+      setToastMsg("Request Sent ✅");
+      setShowToast(true);
+
+      setUsers((prev) =>
+        prev.map((u) =>
+          u._id === id ? { ...u, requested: true } : u
+        )
+      );
+
+    } catch (err) {
+      if (err.response?.status === 400) {
+        // 🔥 Already connected popup
+        setToastMsg("Already requested by you ");
+        setShowToast(true);
+
+        setUsers((prev) =>
+          prev.map((u) =>
+            u._id === id ? { ...u, alreadyConnected: true } : u
+          )
+        );
+      }
+
+      if (err.response?.status === 401) {
+        navigate("/login");
+      }
     }
   };
 
@@ -31,25 +89,32 @@ const SearchPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-base-200 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-950 text-white p-6">
 
-      {/* 🔥 Search Bar */}
-      <div className="max-w-xl mx-auto mb-6 flex gap-2">
-        <input
-          type="text"
-          placeholder="Search by skills (e.g. React, Node)"
-          className="input input-bordered w-full"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-        />
+      {/* 🔥 Toast Popup */}
+      {showToast && (
+        <div className="toast toast-top toast-center z-50">
+          <div className="alert alert-info shadow-lg">
+            <span>{toastMsg}</span>
+          </div>
+        </div>
+      )}
 
-        <button
-          onClick={handleSearch}
-          className="btn btn-primary"
-        >
-          Search
-        </button>
+      {/* 🔍 Search Bar */}
+      <div className="max-w-xl mx-auto mb-6">
+        <div className="flex items-center bg-gray-800 rounded-xl px-3 py-2">
+          <Search size={18} className="text-gray-400 mr-2" />
+          <input
+            type="text"
+            placeholder="Search by name or skills (React, Node...)"
+            className="bg-transparent outline-none w-full text-sm"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              handleSearch(e.target.value);
+            }}
+          />
+        </div>
       </div>
 
       {/* 🔄 Loading */}
@@ -61,60 +126,64 @@ const SearchPage = () => {
 
       {/* 🔍 Results */}
       {!loading && (
-        <div className="bg-base-100 rounded-xl border border-base-200 divide-y max-w-2xl mx-auto">
+        <div className="max-w-2xl mx-auto space-y-3">
 
           {users.length === 0 ? (
-            <p className="p-6 text-center text-base-content/50">
-              No users found
+            <p className="text-center text-gray-400 mt-10">
+              Search developers by name or skills
             </p>
           ) : (
             users.map((user) => (
               <div
                 key={user._id}
-                className="flex items-center justify-between p-4 hover:bg-base-200 transition cursor-pointer"
-                onClick={() => handleOpenProfile(user._id)}
+                className="flex items-center justify-between p-4 bg-gray-900 rounded-xl border border-gray-800 hover:bg-gray-800 transition"
               >
                 {/* Left */}
-                <div className="flex items-center gap-3">
-                  <div className="avatar">
-                    <div className="w-12 h-12 rounded-full overflow-hidden">
-                      <img
-                        src={
-                          user.photoURL ||
-                          "https://via.placeholder.com/100"
-                        }
-                        alt="user"
-                        className="object-cover w-full h-full"
-                      />
-                    </div>
-                  </div>
+                <div
+                  className="flex items-center gap-3 cursor-pointer"
+                  onClick={() => handleOpenProfile(user._id)}
+                >
+                  <img
+                    src={user.photoURL || "https://i.pravatar.cc/100"}
+                    className="w-12 h-12 rounded-full"
+                  />
 
                   <div>
-                    <h3 className="font-medium capitalize">
-                      {user.name}
-                    </h3>
+                    <h3 className="font-medium capitalize">{user.name}</h3>
 
-                    {/* Skills */}
-                    <p className="text-xs text-base-content/50">
-                      {user.skills?.join(", ")}
-                    </p>
+                    <div className="flex gap-1 flex-wrap mt-1">
+                      {user.skills?.slice(0, 3).map((s, i) => (
+                        <span
+                          key={i}
+                          className="text-xs bg-gray-800 px-2 py-0.5 rounded-full"
+                        >
+                          {s}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
                 {/* Right */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleOpenProfile(user._id);
-                  }}
-                  className="btn btn-sm btn-outline btn-primary"
-                >
-                  View
-                </button>
+                {user.alreadyConnected ? (
+                  <span className="text-xs text-green-400">
+                   Already request is sent
+                  </span>
+                ) : user.requested ? (
+                  <span className="text-xs text-yellow-400">
+                    Requested
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => handleConnect(user._id)}
+                    className="btn btn-sm btn-primary"
+                  >
+                    Connect
+                  </button>
+                )}
               </div>
             ))
           )}
-
         </div>
       )}
     </div>

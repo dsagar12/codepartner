@@ -41,25 +41,30 @@ const Chat = () => {
     fetchUser();
   }, [currentUser, dispatch]);
 
-  // Fetch messages
-  useEffect(() => {
-    const fetchMessages = async () => {
-      if (!usersId || !userId) {
-        setIsLoading(false);
-        return;
+useEffect(() => {
+  const fetchMessages = async () => {
+    if (!usersId || !userId) {
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await axios.get(
+        `http://localhost:3000/messages/${userId}`,
+        { withCredentials: true }
+      );
+      setMessages(response.data);
+    } catch (error) {
+      if (error.response?.status === 401) {
+        navigate("/login"); // ✅ direct redirect
       }
-      
-      try {
-        const response = await axios.get(`http://localhost:3000/messages/${userId}`, { withCredentials: true });
-        setMessages(response.data);
-      } catch (error) {
-        if (error.response?.status === 401) setTimeout(() => navigate('/login'), 2000);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchMessages();
-  }, [usersId, userId, navigate]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  fetchMessages();
+}, [usersId, userId, navigate]);
 
   // Socket setup
   useEffect(() => {

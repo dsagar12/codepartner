@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const IncomingRequests = () => {
   const [requests, setRequests] = useState([]);
+  const navigate = useNavigate();
 
   const fetchRequests = async () => {
     try {
@@ -10,7 +12,6 @@ const IncomingRequests = () => {
         "http://localhost:3000/requests/received",
         { withCredentials: true }
       );
-
       setRequests(res.data.users || []);
     } catch (err) {
       console.error(err);
@@ -25,11 +26,9 @@ const IncomingRequests = () => {
         { withCredentials: true }
       );
 
-      // ✅ remove accepted/rejected card instantly
       setRequests((prev) =>
         prev.filter((req) => req.requestId !== requestId)
       );
-
     } catch (err) {
       console.error(err);
     }
@@ -40,54 +39,75 @@ const IncomingRequests = () => {
   }, []);
 
   return (
-    <div>
-      <h2 className="text-xl font-semibold mb-4">Invitations</h2>
+    <div className="min-h-screen text-white p-6">
 
-      {requests.length === 0 ? (
-        <p className="text-base-content/50">No pending invitations</p>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          
-          {requests.map((item) => (
-            <div key={item.requestId} className="card bg-base-100 shadow">
-              
-              <div className="p-3">
-                <h3 className="font-semibold">
-                  {item.user.name}
-                </h3>
+      {/* Header */}
+      <div className="max-w-3xl mx-auto mb-4 flex justify-between">
+        <h2 className="text-xl font-semibold">Invitations</h2>
+        <span className="text-sm text-gray-400">
+          {requests.length} pending
+        </span>
+      </div>
 
-                <p className="text-xs text-base-content/60">
-                  {item.user.email}
-                </p>
+      {/* List */}
+      <div className="max-w-3xl mx-auto divide-y divide-gray-800 bg-gray-900 rounded-xl border border-gray-800">
 
-                <div className="flex gap-2 mt-3">
-                  
-                  <button
-                    onClick={() =>
-                      handleReview("accepted", item.requestId)
-                    }
-                    className="btn btn-success btn-xs"
-                  >
-                    Accept
-                  </button>
+        {requests.length === 0 ? (
+          <p className="p-6 text-center text-gray-400">
+            No pending invitations
+          </p>
+        ) : (
+          requests.map((item) => (
+            <div
+              key={item.requestId}
+              className="flex items-center justify-between p-4 hover:bg-gray-800 transition cursor-pointer"
+              onClick={() => navigate(`/profile/${item.user._id}`)}
+            >
+              {/* Left */}
+              <div className="flex items-center gap-3">
 
-                  <button
-                    onClick={() =>
-                      handleReview("rejected", item.requestId)
-                    }
-                    className="btn btn-error btn-xs"
-                  >
-                    Reject
-                  </button>
+                <img
+                  src={item.user.photoURL || "https://i.pravatar.cc/100"}
+                  className="w-10 h-10 rounded-full"
+                />
 
+                <div>
+                  <h3 className="font-medium capitalize">
+                    {item.user.name}
+                  </h3>
+                  <p className="text-xs text-gray-400">
+                    {item.user.email}
+                  </p>
                 </div>
               </div>
 
-            </div>
-          ))}
+              {/* Right Buttons */}
+              <div
+                className="flex gap-2"
+                onClick={(e) => e.stopPropagation()} // 🔥 important
+              >
+                <button
+                  onClick={() =>
+                    handleReview("accepted", item.requestId)
+                  }
+                  className="btn btn-success btn-xs"
+                >
+                  Accept
+                </button>
 
-        </div>
-      )}
+                <button
+                  onClick={() =>
+                    handleReview("rejected", item.requestId)
+                  }
+                  className="btn btn-error btn-xs"
+                >
+                  Reject
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 };

@@ -103,126 +103,126 @@ export default function SwipeCard({ user, index, isTop, onAction }) {
     };
   }, [isTop, user._id, onAction]);
 
-  return (
-    <div
-      ref={cardRef}
-      className="absolute inset-0 rounded-2xl overflow-hidden bg-gray-900 flex flex-col border border-gray-800"
-      style={{
-        zIndex: 10 - index,
-        transform: `scale(${1 - index * 0.04}) translateY(${index * -14}px)`,
-        pointerEvents: isTop ? "auto" : "none",
-        opacity: 1 - index * 0.15,
-        cursor: isTop ? "grab" : "default",
-        willChange: "transform",
-      }}
-    >
-      {/* Stamps */}
-      <div
-        className="like-stamp absolute top-6 left-4 text-green-400 border-2 border-green-400 px-3 py-1 rounded-lg text-xs font-bold tracking-widest opacity-0 z-10 pointer-events-none"
-        style={{ transform: "rotate(-16deg)" }}
-      >
-        INTEREST
-      </div>
-      <div
-        className="nope-stamp absolute top-6 right-4 text-red-400 border-2 border-red-400 px-3 py-1 rounded-lg text-xs font-bold tracking-widest opacity-0 z-10 pointer-events-none"
-        style={{ transform: "rotate(16deg)" }}
-      >
-        IGNORE
-      </div>
+ // Only UI part changed (logic same)
 
-      {/* Photo */}
-      <div className="w-full h-60 bg-gradient-to-br from-pink-900 to-gray-900 flex-shrink-0 relative overflow-hidden">
-        {user.photoURL ? (
-          <img
-            src={user.photoURL}
-            alt={user.name}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-7xl select-none">
-            {user.name?.[0] ?? "?"}
-          </div>
-        )}
-      </div>
-
-      {/* Body */}
-      <div className="flex flex-col flex-1 p-4 overflow-hidden">
-        <p className="text-white font-medium text-lg leading-tight">{user.name}</p>
-        <p className="text-gray-500 text-xs mb-2">
-          {[user.age, user.gender, user.location].filter(Boolean).join(" · ")}
-        </p>
-        <p className="text-gray-400 text-xs mb-3 line-clamp-2 leading-relaxed">
-          {user.about}
-        </p>
-
-        {/* Skills */}
-        <div className="flex flex-wrap gap-1 mb-3">
-          {user.skills?.map((s, i) => (
-            <span
-              key={i}
-              className="text-xs bg-gray-800 text-gray-300 px-2 py-0.5 rounded-full border border-gray-700"
-            >
-              {s}
-            </span>
-          ))}
-        </div>
-
-        {/* Profile Links */}
-        <div className="flex gap-2 mb-3 flex-wrap">
-         {user.github && (
-  <a
-    href={`https://github.com/${user.github}`}
-    target="_blank"
-    rel="noreferrer"
-    onMouseDown={(e) => e.stopPropagation()}
-    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-800 border border-gray-700 hover:border-gray-400 transition-colors text-gray-300 no-underline text-xs font-medium"
+return (
+  <div
+    ref={cardRef}
+    className="absolute inset-0 rounded-3xl overflow-hidden bg-base-100 shadow-2xl flex flex-col border border-base-300"
+    style={{
+      zIndex: 10 - index,
+      transform: `scale(${1 - index * 0.04}) translateY(${index * -14}px)`,
+      pointerEvents: isTop ? "auto" : "none",
+      opacity: 1 - index * 0.15,
+      cursor: isTop ? "grab" : "default",
+      willChange: "transform",
+    }}
   >
-    <GithubIcon /> GitHub
-  </a>
-)}{user.leetcode && (
-  <a
-    href={`https://leetcode.com/${user.leetcode}`}
-    target="_blank"
-    rel="noreferrer"
-    onMouseDown={(e) => e.stopPropagation()}
-    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-800 border border-gray-700 hover:border-yellow-500 transition-colors text-gray-300 no-underline text-xs font-medium"
-  >
-    <LeetcodeIcon /> LeetCode
-  </a>
-)}
-        {user.gfg && (
-  <a
-    href={`https://geeksforgeeks.org/user/${user.gfg}`}
-    target="_blank"
-    rel="noreferrer"
-    onMouseDown={(e) => e.stopPropagation()}
-    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-800 border border-gray-700 hover:border-green-500 transition-colors text-gray-300 no-underline text-xs font-medium"
-  >
-    <GFGIcon /> GFG
-  </a>
-)}
-        </div>
+    {/* 🔥 Gradient overlay */}
+    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent z-10 pointer-events-none"></div>
 
-        {/* Action Buttons */}
-        {isTop && (
-          <div className="flex gap-3 justify-center mt-auto">
-            <button
-              onMouseDown={(e) => e.stopPropagation()}
-              onClick={() => onAction("ignored", user._id)}
-              className="w-12 h-12 rounded-full bg-gray-800 hover:bg-red-950 border border-gray-700 hover:border-red-500 flex items-center justify-center text-xl transition-all"
-            >
-              ✕
-            </button>
-            <button
-              onMouseDown={(e) => e.stopPropagation()}
-              onClick={() => onAction("interested", user._id)}
-              className="w-12 h-12 rounded-full bg-pink-700 hover:bg-pink-500 flex items-center justify-center text-xl transition-all"
-            >
-              ♥
-            </button>
-          </div>
-        )}
-      </div>
+    {/* 🔥 Stamps */}
+    <div className="like-stamp absolute top-6 left-4 text-green-500 border-2 border-green-500 px-3 py-1 rounded-lg text-xs font-bold tracking-widest opacity-0 z-20 bg-black/40 backdrop-blur-sm">
+      INTEREST
     </div>
-  );
+
+    <div className="nope-stamp absolute top-6 right-4 text-red-500 border-2 border-red-500 px-3 py-1 rounded-lg text-xs font-bold tracking-widest opacity-0 z-20 bg-black/40 backdrop-blur-sm">
+      IGNORE
+    </div>
+
+    {/* 🔥 Image */}
+    <div className="w-full h-[65%] relative">
+      {user.photoURL ? (
+        <img
+          src={user.photoURL}
+          alt={user.name}
+          className="w-full h-full object-cover"
+        />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center text-7xl bg-base-200">
+          {user.name?.[0] ?? "?"}
+        </div>
+      )}
+    </div>
+
+    {/* 🔥 Content */}
+    <div className="absolute bottom-0 w-full p-4 z-20 text-white">
+
+      {/* Name */}
+      <h2 className="text-2xl font-bold">
+        {user.name}
+      </h2>
+
+      {/* Info */}
+      <p className="text-xs opacity-80 mb-2">
+        {[user.age, user.gender, user.location].filter(Boolean).join(" • ")}
+      </p>
+
+      {/* About */}
+      <p className="text-sm opacity-90 line-clamp-2 mb-3">
+        {user.about || "Passionate developer 🚀"}
+      </p>
+
+      {/* Skills */}
+      <div className="flex flex-wrap gap-2 mb-3">
+        {user.skills?.slice(0, 4).map((s, i) => (
+          <span
+            key={i}
+            className="badge badge-outline badge-sm text-white border-white/40"
+          >
+            {s}
+          </span>
+        ))}
+      </div>
+
+      {/* Links */}
+      <div className="flex gap-2 flex-wrap mb-3">
+        {user.github && (
+          <a
+            href={`https://github.com/${user.github}`}
+            target="_blank"
+            rel="noreferrer"
+            onMouseDown={(e) => e.stopPropagation()}
+            className="btn btn-xs btn-outline"
+          >
+            GitHub
+          </a>
+        )}
+
+        {user.leetcode && (
+          <a
+            href={`https://leetcode.com/${user.leetcode}`}
+            target="_blank"
+            rel="noreferrer"
+            onMouseDown={(e) => e.stopPropagation()}
+            className="btn btn-xs btn-outline"
+          >
+            LeetCode
+          </a>
+        )}
+      </div>
+
+      {/* 🔥 Buttons */}
+      {isTop && (
+        <div className="flex justify-center gap-6 mt-2">
+          <button
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={() => onAction("ignored", user._id)}
+            className="btn btn-circle btn-outline border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
+          >
+            ✕
+          </button>
+
+          <button
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={() => onAction("interested", user._id)}
+            className="btn btn-circle bg-primary text-white hover:scale-110 shadow-lg"
+          >
+            ♥
+          </button>
+        </div>
+      )}
+    </div>
+  </div>
+);
 }

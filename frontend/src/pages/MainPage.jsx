@@ -7,6 +7,7 @@ import { useDispatch } from 'react-redux'
 import { addUser } from '../utils/userSlice'
 import axios from 'axios'
 import { useSelector } from 'react-redux'
+import Home from './HomePage'
 const MainPage = () => {
   const userData= useSelector((state) => state.user);
   const dispatch= useDispatch();
@@ -30,7 +31,7 @@ const MainPage = () => {
   return (
     <div>
      
-      <Feed/>
+      <Home/>
       
     </div>
   )

@@ -3,6 +3,9 @@ import { useSelector, useDispatch } from "react-redux";
 import axios from "axios";
 import { addUser } from "../utils/userSlice";
 import ProfileCard from "../components/ProfileCard";
+import { useNavigate } from "react-router-dom";
+import { Code2,  Star, GitFork, Users, Calendar, MessageCircle, Trophy, Brain, TrendingUp, Activity } from "lucide-react";
+
 const getInitials = (name = "") =>
   name
     .split(" ")
@@ -28,7 +31,6 @@ const BADGE_VARIANTS = [
   "badge-warning",
   "badge-error",
 ];
-
 
 function SkillTag({ label, index, onRemove }) {
   return (
@@ -57,7 +59,6 @@ function SkillTag({ label, index, onRemove }) {
     </span>
   );
 }
-
 
 function Toast({ type, message, onClose }) {
   useEffect(() => {
@@ -97,18 +98,19 @@ function Toast({ type, message, onClose }) {
   );
 }
 
-/* ════════════════════════════════════════
-   MAIN PAGE
-════════════════════════════════════════ */
 export default function ProfilePage() {
   const userData = useSelector((state) => state.user);
   const dispatch = useDispatch();
 
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState(null); // { type, message }
+  const [toast, setToast] = useState(null);
   const [draft, setDraft] = useState({});
   const [skillInput, setSkillInput] = useState("");
+  const [leetcodeStats, setLeetcodeStats] = useState(null);
+  const [githubStats, setGithubStats] = useState(null);
+  const [loadingStats, setLoadingStats] = useState(false);
+  const navigate = useNavigate();
 
   /* fetch */
   const fetchUser = async () => {
@@ -118,12 +120,56 @@ export default function ProfilePage() {
       });
       dispatch(addUser(res.data));
     } catch (e) {
-      console.error(e);
+      if(e.response?.status==401){
+        navigate("/login");
+      }
+    }
+  };
+
+  const fetchStats = async (userId) => {
+    if (!userId) return;
+    setLoadingStats(true);
+    try {
+      // Fetch LeetCode stats
+      if (userData?.leetcodeLink) {
+        try {
+          const leetcodeRes = await axios.get(`http://localhost:3000/leetcode-stats/${userId}`, {
+            withCredentials: true,
+          });
+          setLeetcodeStats(leetcodeRes.data);
+        } catch (err) {
+          console.error("Error fetching LeetCode stats:", err);
+          setLeetcodeStats(null);
+        }
+      }
+      
+      // Fetch GitHub stats
+      if (userData?.githubLink) {
+        try {
+          const githubRes = await axios.get(`http://localhost:3000/github-stats/${userId}`, {
+            withCredentials: true,
+          });
+          setGithubStats(githubRes.data);
+        } catch (err) {
+          console.error("Error fetching GitHub stats:", err);
+          setGithubStats(null);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching stats:", err);
+    } finally {
+      setLoadingStats(false);
     }
   };
 
   useEffect(() => {
     if (!userData) fetchUser();
+  }, [userData]);
+
+  useEffect(() => {
+    if (userData && (userData.leetcodeLink || userData.githubLink)) {
+      fetchStats(userData._id);
+    }
   }, [userData]);
 
   /* open edit */
@@ -133,6 +179,8 @@ export default function ProfilePage() {
       about: userData?.about ?? "",
       photoURL: userData?.photoURL ?? "",
       skills: [...(userData?.skills ?? [])],
+      leetcodeLink: userData?.leetcodeLink ?? "",
+      githubLink: userData?.githubLink ?? "",
     });
     setSkillInput("");
     setEditing(true);
@@ -159,6 +207,8 @@ export default function ProfilePage() {
           about: draft.about,
           photoURL: draft.photoURL,
           skills: draft.skills,
+          leetcodeLink: draft.leetcodeLink,
+          githubLink: draft.githubLink,
         },
         {
           withCredentials: true,
@@ -167,6 +217,10 @@ export default function ProfilePage() {
       dispatch(addUser(res.data));
       setEditing(false);
       setToast({ type: "success", message: "Profile updated successfully!" });
+      // Refresh stats after update
+      if (res.data.leetcodeLink || res.data.githubLink) {
+        fetchStats(res.data._id);
+      }
     } catch {
       setToast({ type: "error", message: "Update failed. Please try again." });
     } finally {
@@ -189,8 +243,7 @@ export default function ProfilePage() {
   const preview = { ...userData, ...draft };
 
   return (
-    <div className="min-h-screen bg-base-200 font-sans">
-      {/* ── TOAST ── */}
+    <div className="min-h-screen bg-base-200 font-sans ">
       <Toast
         type={toast?.type}
         message={toast?.message}
@@ -198,13 +251,10 @@ export default function ProfilePage() {
       />
 
       {editing ? (
-        /* ═══════════════════════════════════════════
-           EDIT MODE  — split screen
-        ═══════════════════════════════════════════ */
+        /* EDIT MODE — split screen */
         <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2">
-          {/* ── LEFT: Form ── */}
+          {/* LEFT: Form */}
           <div className="flex flex-col bg-base-100 border-r border-base-200">
-            {/* sticky top bar */}
             <div className="sticky top-0 z-10 bg-base-100 border-b border-base-200 px-6 py-4 flex items-center justify-between gap-4">
               <div>
                 <h1 className="text-base font-semibold tracking-tight text-base-content">
@@ -235,7 +285,6 @@ export default function ProfilePage() {
               </button>
             </div>
 
-            {/* scrollable form body */}
             <div className="flex-1 overflow-y-auto px-6 py-8 space-y-7">
               {/* avatar mini strip */}
               <div className="flex items-center gap-4 p-4 rounded-xl bg-base-200 border border-base-300">
@@ -333,6 +382,55 @@ export default function ProfilePage() {
                 />
               </label>
 
+              {/* LeetCode Link */}
+              <label className="form-control">
+                <div className="label pb-1">
+                  <span className="label-text text-[10px] font-semibold tracking-widest uppercase text-base-content/40 flex items-center gap-1">
+                    <Code2 className="w-3 h-3" />
+                    LeetCode Profile URL
+                  </span>
+                </div>
+                <input
+                  type="url"
+                  value={draft.leetcodeLink}
+                  onChange={(e) =>
+                    setDraft((d) => ({ ...d, leetcodeLink: e.target.value }))
+                  }
+                  placeholder="https://leetcode.com/u/username/"
+                  className="input input-bordered input-sm w-full focus:input-primary"
+                />
+                <div className="label pt-1">
+                  <span className="label-text-alt text-info">
+                    
+                     Add your LeetCode profile to show solved problems
+                  </span>
+                </div>
+              </label>
+
+              {/* GitHub Link */}
+              <label className="form-control">
+                <div className="label pb-1">
+                  <span className="label-text text-[10px] font-semibold tracking-widest uppercase text-base-content/40 flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    GitHub Profile URL
+                  </span>
+                </div>
+                <input
+                  type="url"
+                  value={draft.githubLink}
+                  onChange={(e) =>
+                    setDraft((d) => ({ ...d, githubLink: e.target.value }))
+                  }
+                  placeholder="https://github.com/username"
+                  className="input input-bordered input-sm w-full focus:input-primary"
+                />
+                <div className="label pt-1">
+                  <span className="label-text-alt text-info">
+                    💡 Add your GitHub profile to show repos, stars, and commits
+                  </span>
+                </div>
+              </label>
+
               {/* Skills */}
               <div>
                 <p className="text-[10px] font-semibold tracking-widest uppercase text-base-content/40 mb-2">
@@ -413,7 +511,7 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* ── RIGHT: Live Preview ── */}
+          {/* RIGHT: Live Preview */}
           <div className="flex flex-col items-center justify-center gap-6 bg-base-200 px-6 py-12 min-h-screen lg:min-h-0">
             <div className="text-center">
               <p className="text-[10px] font-semibold tracking-widest uppercase text-primary mb-1">
@@ -433,16 +531,15 @@ export default function ProfilePage() {
           </div>
         </div>
       ) : (
-        
+        /* VIEW MODE */
         <div className="min-h-screen">
-        
           <div className="max-w-5xl mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-            {/* ── left col: card ── */}
+            {/* left col: card */}
             <div className="lg:col-span-1 flex justify-center">
               <ProfileCard data={userData} onEdit={openEdit} />
             </div>
 
-            {/* ── right col: detail panels ── */}
+            {/* right col: detail panels */}
             <div className="lg:col-span-2 space-y-5">
               {/* welcome banner */}
               <div className="card bg-primary text-primary-content shadow-sm">
@@ -479,111 +576,144 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* profile completion */}
-              {(() => {
-                const fields = [
-                  { label: "Name", done: !!userData.name },
-                  { label: "Photo", done: !!userData.photoURL },
-                  { label: "Bio", done: !!userData.about },
-                  { label: "Skills", done: userData.skills?.length > 0 },
-                ];
-                const pct = Math.round(
-                  (fields.filter((f) => f.done).length / fields.length) * 100,
-                );
-                return (
-                  <div className="card bg-base-100 shadow-sm border border-base-200">
-                    <div className="card-body py-5 px-6 gap-4">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-semibold text-sm tracking-tight">
-                          Profile Completion
-                        </h3>
-                        <span
-                          className={`badge badge-sm font-semibold ${pct === 100 ? "badge-success" : "badge-warning"}`}
-                        >
-                          {pct}%
-                        </span>
-                      </div>
-                      <progress
-                        className={`progress w-full h-2 ${pct === 100 ? "progress-success" : "progress-primary"}`}
-                        value={pct}
-                        max="100"
-                      />
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        {fields.map(({ label, done }) => (
-                          <div
-                            key={label}
-                            className={`flex items-center gap-1.5 text-xs font-medium ${done ? "text-success" : "text-base-content/35"}`}
-                          >
-                            {done ? (
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="w-3.5 h-3.5 shrink-0"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                strokeWidth={2.5}
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  d="M5 13l4 4L19 7"
-                                />
-                              </svg>
-                            ) : (
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="w-3.5 h-3.5 shrink-0"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                strokeWidth={2}
-                              >
-                                <circle cx="12" cy="12" r="9" />
-                              </svg>
-                            )}
-                            {label}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
+            {/* LeetCode Stats Section */}
+{userData.leetcodeLink && (
+  <div className="bg-base-200 rounded-lg border border-base-300 p-5">
+    <div className="flex justify-between items-center mb-4">
+      <h3 className="text-sm font-semibold text-base-content">
+        LeetCode Progress
+      </h3>
+      <a
+        href={userData.leetcodeLink}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-xs text-base-content/60 hover:text-base-content"
+      >
+        View Profile
+      </a>
+    </div>
 
-              {/* account info */}
-              <div className="card bg-base-100 shadow-sm border border-base-200">
-                <div className="card-body py-5 px-6 gap-4">
-                  <h3 className="font-semibold text-sm tracking-tight">
-                    Account Information
-                  </h3>
-                  <div className="divide-y divide-base-200">
-                    {[
-                      { label: "Email", value: userData.email },
-                      {
-                        label: "Member Since",
-                        value: formatDate(userData.createdAt),
-                      },
-                      {
-                        label: "Last Updated",
-                        value: formatDate(userData.updatedAt),
-                      },
-                      { label: "User ID", value: userData._id },
-                    ].map(({ label, value }) => (
-                      <div
-                        key={label}
-                        className="flex justify-between items-center py-2.5 gap-4"
-                      >
-                        <span className="text-xs text-base-content/40 font-medium shrink-0">
-                          {label}
-                        </span>
-                        <span className="text-xs text-base-content/70 font-mono truncate text-right">
-                          {value}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+    {loadingStats ? (
+      <div className="text-center text-sm text-base-content/60 py-6">
+        Loading data
+      </div>
+    ) : leetcodeStats && !leetcodeStats.error ? (
+      <div className="grid grid-cols-2  md:grid-cols-3 gap-4 text-sm">
+       <div className="bg-white/70 backdrop-blur-sm p-3 rounded-md border border-gray-200 shadow-sm">
+  <p className="text-xs text-black  mb-1 ">Ranking</p>
+  <p className="text-base font-semibold text-gray-800">
+    {leetcodeStats.ranking || "N/A"}
+  </p>
+</div>
+
+<div className="bg-white/70 text-black  backdrop-blur-sm p-3 rounded-md border border-gray-200 shadow-sm">
+  <p className="text-xs mb-1 text-black ">Solved</p>
+  <p className="text-base font-semibold text-gray-800">
+    {leetcodeStats.totalSolved || 0} / {leetcodeStats.totalQuestions || 0}
+  </p>
+</div>
+
+<div className="bg-white/70 backdrop-blur-sm p-3 rounded-md border border-gray-200 shadow-sm">
+  <p className="text-xs text-gray-900 mb-1">Acceptance</p>
+  <p className="text-base font-semibold text-gray-800">
+    {leetcodeStats.acceptanceRate || 0}%
+  </p>
+</div>
+
+<div className="bg-white/70 backdrop-blur-sm p-3 rounded-md border border-gray-200 shadow-sm">
+  <p className="text-xs text-gray-900 mb-1">Easy</p>
+  <p className="text-base font-semibold text-gray-800">
+    {leetcodeStats.easySolved || 0} / {leetcodeStats.totalEasy || 0}
+  </p>
+</div>
+
+<div className="bg-white/70 backdrop-blur-sm p-3 rounded-md border border-gray-200 shadow-sm">
+  <p className="text-xs text-gray-900 mb-1">Medium</p>
+  <p className="text-base font-semibold text-gray-800">
+    {leetcodeStats.mediumSolved || 0} / {leetcodeStats.totalMedium || 0}
+  </p>
+</div>
+
+<div className="bg-white/70 backdrop-blur-sm p-3 rounded-md border border-gray-200 shadow-sm">
+  <p className="text-xs text-gray-900 mb-1">Hard</p>
+  <p className="text-base font-semibold text-gray-800">
+    {leetcodeStats.hardSolved || 0} / {leetcodeStats.totalHard || 0}
+  </p>
+</div>
+      </div>
+    ) : (
+      <div className="text-center text-sm text-base-content/60 py-4">
+        Unable to load data
+      </div>
+    )}
+  </div>
+)}
+
+{/* GitHub Stats Section */}
+{userData.githubLink && (
+  <div className="bg-base-200 rounded-lg border border-base-300 p-5">
+    <div className="flex justify-between items-center mb-4">
+      <h3 className="text-sm font-semibold text-base-content">
+        GitHub Activity
+      </h3>
+      <a
+        href={userData.githubLink}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-xs text-base-content/60 hover:text-base-content"
+      >
+        View Profile
+      </a>
+    </div>
+
+    {loadingStats ? (
+      <div className="text-center text-sm text-base-content/60 py-6">
+        Loading data
+      </div>
+    ) : githubStats && !githubStats.error ? (
+      <div className="space-y-4 text-sm">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-base-100 p-3 rounded-md border">
+            <p className="text-base-content/60">Repositories</p>
+            <p className="font-semibold">{githubStats.public_repos || 0}</p>
+          </div>
+
+          <div className="bg-base-100 p-3 rounded-md border">
+            <p className="text-base-content/60">Stars</p>
+            <p className="font-semibold">{githubStats.totalStars || 0}</p>
+          </div>
+
+          <div className="bg-base-100 p-3 rounded-md border">
+            <p className="text-base-content/60">Forks</p>
+            <p className="font-semibold">{githubStats.totalForks || 0}</p>
+          </div>
+
+          <div className="bg-base-100 p-3 rounded-md border">
+            <p className="text-base-content/60">Followers</p>
+            <p className="font-semibold">{githubStats.followers || 0}</p>
+          </div>
+        </div>
+
+        {githubStats.bio && (
+          <div className="bg-base-100 border rounded-md p-3 text-base-content/70">
+            {githubStats.bio}
+          </div>
+        )}
+
+        <div className="text-xs text-base-content/60 text-center">
+          Joined on{" "}
+          {new Date(githubStats.created_at).toLocaleDateString()}
+        </div>
+      </div>
+    ) : (
+      <div className="text-center text-sm text-base-content/60 py-4">
+        Unable to load data
+      </div>
+    )}
+  </div>
+)}
+
+     
 
               {/* skills detail */}
               <div className="card bg-base-100 shadow-sm border border-base-200">
@@ -632,6 +762,41 @@ export default function ProfilePage() {
                       </button>
                     </div>
                   )}
+                </div>
+              </div>
+                    
+              {/* account info */}
+              <div className="card bg-base-100 shadow-sm border border-base-200">
+                <div className="card-body py-5 px-6 gap-4">
+                  <h3 className="font-semibold text-sm tracking-tight">
+                    Account Information
+                  </h3>
+                  <div className="divide-y divide-base-200">
+                    {[
+                      { label: "Email", value: userData.email },
+                      {
+                        label: "Member Since",
+                        value: formatDate(userData.createdAt),
+                      },
+                      {
+                        label: "Last Updated",
+                        value: formatDate(userData.updatedAt),
+                      },
+                     
+                    ].map(({ label, value }) => (
+                      <div
+                        key={label}
+                        className="flex justify-between items-center py-2.5 gap-4"
+                      >
+                        <span className="text-xs text-base-content/40 font-medium shrink-0">
+                          {label}
+                        </span>
+                        <span className="text-xs text-base-content/70 font-mono truncate text-right">
+                          {value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>

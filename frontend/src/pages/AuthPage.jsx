@@ -13,6 +13,7 @@ const STACKS = [
 ];
 import { addUser } from "../utils/userSlice";
 import { useDispatch } from "react-redux";
+
 const CheckIcon = () => (
   <svg
     width="11"
@@ -72,6 +73,11 @@ export default function AuthPage() {
   const [name, setName] = useState("");
   const [email2, setEmail2] = useState("");
   const [password2, setPassword2] = useState("");
+  
+  // New state for LeetCode and GitHub
+  const [leetcodeUsername, setLeetcodeUsername] = useState("");
+  const [githubUsername, setGithubUsername] = useState("");
+  
   const switchTo = (m) => {
     if (m === mode) return;
     setOverlayVisible(false);
@@ -107,6 +113,8 @@ export default function AuthPage() {
       };
 
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+
   const handleLogin = async () => {
     try {
       const res = await axios.post(
@@ -127,6 +135,10 @@ export default function AuthPage() {
 
   const handleSignup = async () => {
     try {
+      // Construct full URLs from usernames
+      const leetcodeLink = leetcodeUsername ? `https://leetcode.com/u/${leetcodeUsername}/` : "";
+      const githubLink = githubUsername ? `https://github.com/${githubUsername}` : "";
+      
       const res = await axios.post(
         "http://localhost:3000/signup",
         {
@@ -134,6 +146,8 @@ export default function AuthPage() {
           email: email,
           password: password,
           skills: selectedStacks,
+          leetcodeLink: leetcodeLink,
+          githubLink: githubLink,
         },
         { withCredentials: true },
       );
@@ -144,7 +158,6 @@ export default function AuthPage() {
       alert(err.response?.data || "Signup failed");
     }
   };
-  const navigate = useNavigate();
 
   return (
     <div style={styles.root}>
@@ -271,6 +284,34 @@ export default function AuthPage() {
                   background: strength.color,
                 }}
               />
+            </div>
+          </Field>
+
+          {/* LeetCode Username Field */}
+          <Field label="LeetCode username (optional)">
+            <input
+              style={styles.input}
+              type="text"
+              value={leetcodeUsername}
+              onChange={(e) => setLeetcodeUsername(e.target.value)}
+              placeholder="your-leetcode-username"
+            />
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginTop: 4 }}>
+              e.g., leetcode.com/u/your-username
+            </div>
+          </Field>
+
+          {/* GitHub Username Field */}
+          <Field label="GitHub username (optional)">
+            <input
+              style={styles.input}
+              type="text"
+              value={githubUsername}
+              onChange={(e) => setGithubUsername(e.target.value)}
+              placeholder="your-github-username"
+            />
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginTop: 4 }}>
+              e.g., github.com/your-username
             </div>
           </Field>
 
@@ -498,7 +539,7 @@ const styles = {
     position: "relative",
     width: 880,
     maxWidth: "100%",
-    height: 560,
+    height: 680, // Increased height to accommodate new fields
     borderRadius: 28,
     overflow: "hidden",
     border: "1px solid rgba(255,255,255,0.08)",
@@ -521,6 +562,7 @@ const styles = {
       "transform 0.7s cubic-bezier(0.77,0,0.175,1), opacity 0.5s ease",
     zIndex: 2,
     background: "#0f0f15",
+    overflowY: "auto", // Make scrollable if content overflows
   },
   logo: {
     fontFamily: "'JetBrains Mono', monospace",

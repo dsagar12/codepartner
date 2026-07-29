@@ -14,8 +14,10 @@ const RecommendationsPage = () => {
         { withCredentials: true }
       );
       setUsers(res.data.users || []);
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+     if (error.response?.status === 401) {
+        navigate("/login"); // ✅ direct redirect
+      }
     } finally {
       setLoading(false);
     }

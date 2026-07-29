@@ -30,7 +30,7 @@ const BADGE_VARIANTS = [
 const ProfileCard = ({ data, isPreview = false, onEdit }) => {
   const [imgErr, setImgErr] = useState(false);
 
-  useEffect(() => setImgErr(false), [data?.photoURL]);
+  useEffect(() => setImgErr(false), [data?.photoURL]);  
 
   const showAvatar = !imgErr && data?.photoURL;
 

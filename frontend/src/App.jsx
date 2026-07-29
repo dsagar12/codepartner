@@ -13,6 +13,8 @@ import UserProfile from './pages/UserProfile';
 import RecommendationsPage from './pages/RecommendationPage';
 import SearchPage from './pages/SearchPage';
 import Chat from './pages/Chat';
+import NotFound from './pages/NotFound';
+import ChatList from './pages/ChatList';
 const App = () => {
   
   return (
@@ -30,7 +32,10 @@ const App = () => {
               <Route path="/recommendations" element={<RecommendationsPage />} />
               <Route path="/search" element={<SearchPage />} />
               <Route path="/chat/:userId" element={<Chat />} />
+              <Route path="/feed" element={<Feed/>}/>
+              <Route path="/chats" element={<ChatList/>}/>
           </Route>
+          <Route path="*" element={<NotFound/>}/>
           
           
          

@@ -19,7 +19,9 @@ const handleChat = (user) => {
       });
       setConnections(res.data.users || []);
     } catch (err) {
-      console.error(err);
+      if(err.response?.status==401){
+        navigate("/login");
+      }
     }
   };
 

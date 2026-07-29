@@ -13,6 +13,7 @@ const app = express();
 const cors = require("cors");
 const http = require("http");
 const initializeSocket = require('./config/socket');
+const statsRouter=require("./routing/stats.routes");
 
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "http://localhost:5173");
@@ -40,6 +41,7 @@ app.use('/', AuthRouter);
 app.use('/', profileRouter);
 app.use('/', Connection);
 app.use('/', ChatRouter); // Now ChatRouter is defined
+app.use("/",statsRouter);
 
 const server = http.createServer(app);
 

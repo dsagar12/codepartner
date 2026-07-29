@@ -10,7 +10,9 @@ const LogoutModal = () => {
       })
       navigate("/");
     }catch(err){
-      console.error("Logout failed:", err);
+      if(err.response?.status==401){
+        navigate("/login");
+      }
     }
   }
   return (
