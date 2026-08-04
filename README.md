@@ -2,7 +2,7 @@
 
 devConnect is a full-stack social platform designed for developers to discover, connect, and collaborate with like-minded engineers. It combines a swipe-based discovery feed, skill-based recommendations, real-time messaging, and integration with LeetCode and GitHub to showcase coding proficiency.
 
-![devConnect Dashboard](https://via.placeholder.com/800x400?text=devConnect+Dashboard)
+
 
 ##  Features
 
